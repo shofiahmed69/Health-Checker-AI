@@ -1,0 +1,33 @@
+# Sensitive / environment
+.env
+.env.local
+.env.*.local
+apps/api/.env
+apps/web/.env.local
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+.next/
+out/
+build/
+*.tsbuildinfo
+
+# Uploads (user data)
+uploads/
+
+# Logs & debug
+*.log
+npm-debug.log*
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Prisma
+prisma/migrations/**/migration_lock.toml

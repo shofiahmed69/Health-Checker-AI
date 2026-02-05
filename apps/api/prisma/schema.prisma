@@ -1,0 +1,300 @@
+// HealthTrack - Prisma Schema
+// Based on PRD Database Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String    @id @default(uuid())
+  email             String    @unique
+  passwordHash      String    @map("password_hash")
+  firstName         String?   @map("first_name")
+  lastName          String?   @map("last_name")
+  dateOfBirth       DateTime? @map("date_of_birth") @db.Date
+  gender            String?
+  bloodType         String?   @map("blood_type")
+  height            Decimal?  @db.Decimal(5, 2)
+  weight            Decimal?  @db.Decimal(5, 2)
+  profilePictureUrl String?   @map("profile_picture_url")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  emergencyContacts  EmergencyContact[]
+  symptoms           Symptom[]
+  medications        Medication[]
+  doctorVisits       DoctorVisit[]
+  lifestyleLogs      LifestyleLog[]
+  customTrackers     CustomTracker[]
+  attachments        Attachment[]
+  aiInsights         AiInsight[]
+  savedSearches      SavedSearch[]
+  preferences        UserPreferences?
+}
+
+model Doctor {
+  id           String   @id @default(uuid())
+  name         String   @map("name")
+  specialty    String?  @map("specialty")
+  city         String   @map("city")
+  address      String?  @map("address") @db.Text
+  clinicName   String?  @map("clinic_name")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+}
+
+model EmergencyContact {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  name        String
+  relationship String?
+  phone       String
+  email       String?
+  isPrimary   Boolean  @default(false) @map("is_primary")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Symptom {
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  symptomName   String    @map("symptom_name")
+  description   String?   @db.Text
+  severity      Int
+  bodyLocation  String?   @map("body_location")
+  startDatetime DateTime  @map("start_datetime")
+  endDatetime   DateTime? @map("end_datetime")
+  triggers      String?   @db.Text
+  notes         String?   @db.Text
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tags       SymptomTagRelation[]
+  visitLinks VisitSymptom[]
+
+  @@index([userId, startDatetime(sort: Desc)])
+}
+
+model SymptomTag {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  color     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  symptoms SymptomTagRelation[]
+}
+
+model SymptomTagRelation {
+  symptomId String @map("symptom_id")
+  tagId     String @map("tag_id")
+
+  symptom Symptom    @relation(fields: [symptomId], references: [id], onDelete: Cascade)
+  tag     SymptomTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([symptomId, tagId])
+}
+
+model Medication {
+  id                String    @id @default(uuid())
+  userId            String    @map("user_id")
+  medicationName    String    @map("medication_name")
+  dosageAmount      Decimal?  @map("dosage_amount") @db.Decimal(10, 2)
+  dosageUnit        String?   @map("dosage_unit")
+  frequency         String
+  customSchedule    Json?     @map("custom_schedule")
+  route             String?
+  startDate         DateTime  @map("start_date") @db.Date
+  endDate           DateTime? @map("end_date") @db.Date
+  prescribingDoctor String?   @map("prescribing_doctor")
+  purpose           String?   @db.Text
+  sideEffects       String?   @map("side_effects") @db.Text
+  pharmacyName      String?   @map("pharmacy_name")
+  pharmacyPhone     String?   @map("pharmacy_phone")
+  refillReminderDays Int?     @map("refill_reminder_days")
+  lastRefillDate    DateTime? @map("last_refill_date") @db.Date
+  notes             String?   @db.Text
+  imageUrl          String?   @map("image_url")
+  isActive          Boolean   @default(true) @map("is_active")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  medicationLogs   MedicationLog[]
+}
+
+model MedicationLog {
+  id              String    @id @default(uuid())
+  medicationId    String    @map("medication_id")
+  scheduledDatetime DateTime @map("scheduled_datetime")
+  actualDatetime  DateTime? @map("actual_datetime")
+  status          String
+  notes           String?   @db.Text
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+
+  @@index([medicationId, scheduledDatetime])
+}
+
+model DoctorVisit {
+  id                   String    @id @default(uuid())
+  userId               String    @map("user_id")
+  visitDate            DateTime  @map("visit_date") @db.Date
+  visitTime            String?   @map("visit_time")
+  doctorName           String    @map("doctor_name")
+  doctorSpecialty      String?   @map("doctor_specialty")
+  clinicName           String?   @map("clinic_name")
+  clinicAddress        String?   @map("clinic_address") @db.Text
+  visitType            String?   @map("visit_type")
+  chiefComplaint       String?   @map("chief_complaint") @db.Text
+  diagnosis            String?   @db.Text
+  testsOrdered         String?   @map("tests_ordered") @db.Text
+  prescriptionsGiven   String?   @map("prescriptions_given") @db.Text
+  followUpInstructions String?   @map("follow_up_instructions") @db.Text
+  nextAppointmentDate  DateTime? @map("next_appointment_date") @db.Date
+  notes                String?   @db.Text
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  symptoms VisitSymptom[]
+}
+
+model VisitSymptom {
+  visitId   String @map("visit_id")
+  symptomId String @map("symptom_id")
+
+  visit   DoctorVisit @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  symptom Symptom     @relation(fields: [symptomId], references: [id], onDelete: Cascade)
+
+  @@id([visitId, symptomId])
+}
+
+model LifestyleLog {
+  id                 String    @id @default(uuid())
+  userId             String    @map("user_id")
+  logDate            DateTime  @map("log_date") @db.Date
+  sleepHours         Decimal?  @map("sleep_hours") @db.Decimal(4, 2)
+  sleepQuality       Int?
+  sleepTime          String?   @map("sleep_time")
+  wakeTime           String?   @map("wake_time")
+  sleepDisturbances  String?   @map("sleep_disturbances") @db.Text
+  exerciseType       String?   @map("exercise_type")
+  exerciseDuration   Int?      @map("exercise_duration")
+  exerciseIntensity  String?   @map("exercise_intensity")
+  mealsDescription   String?   @map("meals_description") @db.Text
+  waterIntake        Int?      @map("water_intake")
+  notableFoods       String?   @map("notable_foods") @db.Text
+  moodRating         Int?      @map("mood_rating")
+  stressLevel        Int?      @map("stress_level")
+  energyLevel        Int?      @map("energy_level")
+  moodNotes          String?   @map("mood_notes") @db.Text
+  menstrualFlow      String?   @map("menstrual_flow")
+  menstrualSymptoms  String?   @map("menstrual_symptoms") @db.Text
+  bowelFrequency     Int?      @map("bowel_frequency")
+  bowelConsistency   Int?      @map("bowel_consistency")
+  temperature        Decimal?  @db.Decimal(4, 2)
+  humidity           Int?
+  airQualityIndex    Int?      @map("air_quality_index")
+  customData         Json?     @map("custom_data")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, logDate(sort: Desc)])
+}
+
+model CustomTracker {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  trackerName String @map("tracker_name")
+  dataType  String   @map("data_type")
+  unit      String?
+  icon      String?
+  color     String?
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user  User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs  CustomTrackerLog[]
+}
+
+model CustomTrackerLog {
+  id        String   @id @default(uuid())
+  trackerId String   @map("tracker_id")
+  logDate   DateTime @map("log_date") @db.Date
+  value     String
+  notes     String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tracker CustomTracker @relation(fields: [trackerId], references: [id], onDelete: Cascade)
+}
+
+model Attachment {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  entityType  String   @map("entity_type")
+  entityId    String?  @map("entity_id")
+  fileName    String   @map("file_name")
+  filePath    String   @map("file_path")
+  fileType    String   @map("file_type")
+  fileSize    BigInt   @map("file_size")
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AiInsight {
+  id             String    @id @default(uuid())
+  userId         String    @map("user_id")
+  insightType    String    @map("insight_type")
+  insightData    Json?     @map("insight_data")
+  generatedText  String?   @map("generated_text") @db.Text
+  confidenceScore Decimal? @map("confidence_score") @db.Decimal(3, 2)
+  dateRangeStart DateTime? @map("date_range_start") @db.Date
+  dateRangeEnd   DateTime? @map("date_range_end") @db.Date
+  parameters     Json?     @map("parameters")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  expiresAt      DateTime? @map("expires_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, insightType, createdAt(sort: Desc)])
+}
+
+model SavedSearch {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  searchName String   @map("search_name")
+  searchQuery String? @map("search_query") @db.Text
+  filters    Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserPreferences {
+  userId              String   @id @map("user_id")
+  theme               String?  @default("light")
+  language            String?  @default("en")
+  timezone            String?  @default("UTC")
+  dateFormat          String?  @map("date_format")
+  timeFormat          String?  @map("time_format")
+  measurementSystem   String?  @map("measurement_system") @default("metric")
+  notificationEnabled Boolean? @map("notification_enabled") @default(true)
+  reminderTime        String?  @map("reminder_time")
+  weeklySummaryEnabled Boolean? @map("weekly_summary_enabled") @default(false)
+  dataRetentionDays   Int?     @map("data_retention_days")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
