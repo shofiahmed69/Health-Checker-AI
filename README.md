@@ -1,4 +1,4 @@
-# HealthTrack - Personal Health & Symptom Tracker
+# Health-Checker-AI
 
 A privacy-first health tracking application with local AI (Ollama + Llama 3.2) for pattern detection and health summaries.
 
