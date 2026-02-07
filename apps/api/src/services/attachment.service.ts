@@ -16,8 +16,7 @@ export async function uploadAttachment(
   const dir = path.join(UPLOAD_DIR, userId);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
-  const ext = path.extname(file.originalname) || '';
-  const fileName = `${Date.now()}-${file.originalname}`;
+  const fileName = file.filename;
   const filePath = path.join(userId, fileName);
 
   const attachment = await prisma.attachment.create({

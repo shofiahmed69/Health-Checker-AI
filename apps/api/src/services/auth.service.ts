@@ -86,7 +86,10 @@ export async function login(data: LoginInput): Promise<AuthResult> {
 }
 
 function generateToken(userId: string, email: string): string {
-  const secret = process.env.JWT_SECRET || 'fallback-secret-change-me';
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET is not defined in environment variables');
+  }
   return jwt.sign(
     { userId, email },
     secret,

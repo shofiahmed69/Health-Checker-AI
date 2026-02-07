@@ -189,12 +189,28 @@ Doctor visits: ${JSON.stringify(visits.slice(0, 5).map((v) => ({ date: v.visitDa
 Lifestyle: ${JSON.stringify(lifestyle.slice(0, 10).map((l) => ({ date: l.logDate, sleep: l.sleepHours, mood: l.moodRating })))}
 `;
 
+  // Basic sanitization: remove any potential instruction override tags and common attack phrases
+  const sanitizedQuestion = question
+    .replace(/\[\/?(system|user|assistant)\]/gi, '')
+    .replace(/ignore (all )?previous instructions/gi, '')
+    .replace(/you are now (an? )?admin/gi, '')
+    .trim();
+
   const messages = [
     {
       role: 'system' as const,
       content: `You are a health data assistant. Answer questions based ONLY on the user's health data provided. Be concise. Do not give medical advice. Add a disclaimer: "This is not medical advice. Consult your healthcare provider."`,
     },
-    { role: 'user' as const, content: context + '\n\nUser question: ' + question },
+    {
+      role: 'user' as const,
+      content: `### USER HEALTH DATA CONTEXT
+${context}
+### END OF CONTEXT
+
+User Question: ${sanitizedQuestion}
+
+Please provide an answer based strictly on the context provided above.`,
+    },
   ];
 
   return chatWithOllama(messages);
