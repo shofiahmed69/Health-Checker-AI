@@ -105,3 +105,23 @@ export async function health(req: Request, res: Response) {
   const available = await isOllamaAvailable();
   sendSuccess(res, { ollama: available });
 }
+
+export async function diseaseDetection(req: Request, res: Response, next: NextFunction) {
+  try {
+    const available = await isOllamaAvailable();
+    if (!available) {
+      return res.status(503).json({
+        success: false,
+        message: 'Ollama is not running. Start Ollama and pull llama3.2 model.',
+      });
+    }
+    const { symptoms, useTrackedData } = req.body;
+    const result = await aiService.detectDisease(req.userId!, {
+      symptoms: Array.isArray(symptoms) ? symptoms : typeof symptoms === 'string' ? [symptoms] : undefined,
+      useTrackedData: useTrackedData !== false,
+    });
+    sendSuccess(res, { diseases: result });
+  } catch (error) {
+    next(error);
+  }
+}

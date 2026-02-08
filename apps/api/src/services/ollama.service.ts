@@ -1,6 +1,7 @@
 /**
  * Ollama Integration Service
- * Connects to local Ollama at http://localhost:11434 with Llama 3.2
+ * Connects to local Ollama (default: http://localhost:11434) with Llama 3.2
+ * Set OLLAMA_BASE_URL in .env to override
  */
 
 const OLLAMA_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';

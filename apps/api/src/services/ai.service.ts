@@ -233,3 +233,43 @@ export async function getCachedInsights(userId: string, type?: string) {
     take: 20,
   });
 }
+
+/**
+ * Disease detection: Uses Ollama to suggest possible diseases based on symptoms.
+ * Accepts symptoms from user input and/or user's tracked health data.
+ */
+export async function detectDisease(
+  userId: string,
+  options: { symptoms?: string[]; useTrackedData?: boolean }
+): Promise<string> {
+  let symptomText = '';
+  if (options.symptoms?.length) {
+    symptomText = options.symptoms.join(', ');
+  }
+  if (options.useTrackedData !== false) {
+    const symptoms = await prisma.symptom.findMany({
+      where: { userId },
+      orderBy: { startDatetime: 'desc' },
+      take: 30,
+    });
+    const tracked = symptoms.map((s) => `${s.symptomName} (severity: ${s.severity})`).join(', ');
+    if (tracked) {
+      symptomText = symptomText ? `${symptomText}. Also tracked: ${tracked}` : `Tracked symptoms: ${tracked}`;
+    }
+  }
+  if (!symptomText.trim()) {
+    return 'Please provide symptoms (e.g. headache, fever, fatigue) or log symptoms in your tracker first.';
+  }
+
+  const systemPrompt = `You are a health information assistant. Based on the symptoms provided, list possible conditions or diseases that could match.
+For each possibility: name the condition, briefly explain why it might fit, and note the likelihood (low/medium/high).
+End with: "This is NOT a diagnosis. Always consult a healthcare professional for proper medical evaluation."`;
+
+  const prompt = `Based on these symptoms, what possible diseases or conditions could they indicate?
+
+Symptoms: ${symptomText}
+
+Respond with a structured list of possible conditions, brief reasoning, and likelihood. Be concise.`;
+
+  return generateWithOllama(prompt, systemPrompt);
+}

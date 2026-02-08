@@ -10,5 +10,6 @@ router.post('/appointment-prep', aiController.appointmentPrep);
 router.post('/medical-summary', aiController.medicalSummary);
 router.post('/chat', aiController.chat);
 router.post('/suggestions', aiController.suggestions);
+router.post('/disease-detection', aiController.diseaseDetection);
 
 export default router;

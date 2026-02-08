@@ -9,10 +9,12 @@ export default function AIPage() {
   const [response, setResponse] = useState('');
   const [loading, setLoading] = useState(false);
   const [ollamaStatus, setOllamaStatus] = useState<boolean | null>(null);
+  const [diseaseSymptoms, setDiseaseSymptoms] = useState('');
+  const [useTrackedData, setUseTrackedData] = useState(true);
 
   async function checkOllama() {
     try {
-      const res = await api<{ data: { ollama: boolean } }>('/api/ai/health');
+      const res = await api<{ ollama: boolean }>('/api/ai/health');
       setOllamaStatus(res.data?.ollama ?? false);
     } catch {
       setOllamaStatus(false);
@@ -29,7 +31,7 @@ export default function AIPage() {
     setLoading(true);
     setResponse('');
     try {
-      const res = await api<{ data: { response: string } }>('/api/ai/chat', {
+      const res = await api<{ response: string }>('/api/ai/chat', {
         method: 'POST',
         body: JSON.stringify({ message: message.trim() }),
       });
@@ -45,7 +47,7 @@ export default function AIPage() {
     setLoading(true);
     setResponse('');
     try {
-      const res = await api<{ data: { insight: string } }>('/api/ai/patterns', {
+      const res = await api<{ insight: string }>('/api/ai/patterns', {
         method: 'POST',
         body: JSON.stringify({}),
       });
@@ -61,7 +63,7 @@ export default function AIPage() {
     setLoading(true);
     setResponse('');
     try {
-      const res = await api<{ data: { summary: string } }>('/api/ai/appointment-prep', {
+      const res = await api<{ summary: string }>('/api/ai/appointment-prep', {
         method: 'POST',
         body: JSON.stringify({}),
       });
@@ -77,13 +79,37 @@ export default function AIPage() {
     setLoading(true);
     setResponse('');
     try {
-      const res = await api<{ data: { summary: string } }>('/api/ai/medical-summary', {
+      const res = await api<{ summary: string }>('/api/ai/medical-summary', {
         method: 'POST',
         body: JSON.stringify({}),
       });
       setResponse(res.data?.summary || 'No summary generated.');
     } catch (err) {
       setResponse(err instanceof Error ? err.message : 'Failed to generate medical summary.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleDiseaseDetection(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setResponse('');
+    try {
+      const symptoms = diseaseSymptoms
+        .split(/[,;]/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const res = await api<{ diseases: string }>('/api/ai/disease-detection', {
+        method: 'POST',
+        body: JSON.stringify({
+          symptoms: symptoms.length ? symptoms : undefined,
+          useTrackedData,
+        }),
+      });
+      setResponse(res.data?.diseases || 'No response.');
+    } catch (err) {
+      setResponse(err instanceof Error ? err.message : 'Failed to detect diseases.');
     } finally {
       setLoading(false);
     }
@@ -143,6 +169,38 @@ export default function AIPage() {
             Medical summary
           </button>
         </div>
+
+        <form onSubmit={handleDiseaseDetection} className="space-y-3 p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+          <h3 className="font-semibold text-slate-900 dark:text-white">Disease Detection</h3>
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            Enter symptoms separated by commas. Ollama will suggest possible conditions.
+          </p>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={diseaseSymptoms}
+              onChange={(e) => setDiseaseSymptoms(e.target.value)}
+              placeholder="e.g. headache, fever, fatigue, cough"
+              disabled={loading || !ollamaStatus}
+              className="flex-1 px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white disabled:opacity-50"
+            />
+            <button
+              type="submit"
+              disabled={loading || !ollamaStatus}
+              className="px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 disabled:opacity-50 font-medium"
+            >
+              Detect
+            </button>
+          </div>
+          <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+            <input
+              type="checkbox"
+              checked={useTrackedData}
+              onChange={(e) => setUseTrackedData(e.target.checked)}
+            />
+            Include my tracked symptoms from the app
+          </label>
+        </form>
 
         <form onSubmit={handleChat} className="space-y-2">
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">

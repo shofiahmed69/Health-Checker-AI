@@ -125,6 +125,7 @@ practice/
   - Pattern recognition (symptom-medication, symptom-lifestyle)
   - Appointment preparation summaries
   - Medical summaries for doctors
+  - Disease detection (symptoms → possible conditions via Ollama)
   - Natural language Q&A over your health data
 
 ## API Endpoints
@@ -142,5 +143,6 @@ practice/
 - `POST /api/ai/patterns` - Pattern analysis
 - `POST /api/ai/appointment-prep` - Appointment prep
 - `POST /api/ai/medical-summary` - Medical summary
+- `POST /api/ai/disease-detection` - Disease detection (symptoms → possible conditions)
 
 See the PRD for the full API specification.
