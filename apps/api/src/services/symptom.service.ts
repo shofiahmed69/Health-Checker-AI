@@ -70,7 +70,18 @@ export async function deleteSymptom(id: string, userId: string) {
 }
 
 export async function getSymptomTags(userId: string) {
-  return prisma.symptomTag.findMany({ orderBy: { name: 'asc' } });
+  return prisma.symptomTag.findMany({
+    where: {
+      symptoms: {
+        some: {
+          symptom: {
+            userId: userId,
+          },
+        },
+      },
+    },
+    orderBy: { name: 'asc' },
+  });
 }
 
 export async function getSymptomAnalytics(userId: string, startDate: Date, endDate: Date) {

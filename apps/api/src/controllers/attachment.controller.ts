@@ -14,7 +14,8 @@ const storage = multer.diskStorage({
     cb(null, dir);
   },
   filename: (_, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
+    const sanitized = file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '');
+    cb(null, `${Date.now()}-${sanitized}`);
   },
 });
 
@@ -44,6 +45,21 @@ export async function uploadAttachment(req: Request, res: Response, next: NextFu
       description
     );
     sendSuccess(res, attachment, 'File uploaded', 201);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function downloadFile(req: Request, res: Response, next: NextFunction) {
+  try {
+    const att = await attachmentService.getAttachment(req.params.id, req.userId!);
+    const fullPath = path.join(process.cwd(), UPLOAD_DIR, att.filePath);
+
+    if (!require('fs').existsSync(fullPath)) {
+      throw new Error('File not found on disk');
+    }
+
+    res.sendFile(fullPath);
   } catch (error) {
     next(error);
   }
